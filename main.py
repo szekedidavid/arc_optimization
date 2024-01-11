@@ -3,7 +3,7 @@ import scipy as sp
 import matplotlib.pyplot as plt
 
 C1 = 0.0214
-C2 = 0.234  # todo 0.134 or 0.234??
+C2 = 0.234
 g = 9.80665
 mu0 = 1.25663706
 um = 20e3
@@ -64,7 +64,6 @@ def investigate_correlation(var: str):
 
     fig.suptitle(f"Varying {var}")
 
-    # Plot each array on a separate subplot
     axs[0, 0].plot(x_arr, I_EM, color='b')
     axs[0, 0].set_title('$I_{EM}$')
 
@@ -89,8 +88,7 @@ def investigate_correlation(var: str):
     axs[3, 1].plot(x_arr, eta, color='orange')
     axs[3, 1].set_title('$\eta$')
 
-    # Adjust layout to prevent overlapping titles
-    plt.tight_layout(rect=[0, 0, 1, 0.96])
+    plt.tight_layout(rect=(0, 0, 1, 1))
 
     plt.show()
 
@@ -104,11 +102,12 @@ def optimize_thruster():
     return result
 
 
+hmin, hmax = 1, 4
 wmin, wmax = 0.5, 3
 cmin, cmax = 0.5, 1
 Rmin, Rmax = 22e-3, 55e-3
 Lmin, Lmax = 45, 170
-Emin, Emax = 20, 20
+Emin, Emax = 10, 10
 
 h0, w0, c0, R0, L0, E0 = 4, 2, 0.5, 35e-3, 100, 20
 
@@ -118,6 +117,19 @@ opt_arr = optimize_thruster().x
 opt_res = get_results(opt_arr, False)
 
 print(
-    f" h = {opt_arr[0]} \n w = {opt_arr[1]} \n c = {opt_arr[2]} \n R = {opt_arr[3]} \n L = {opt_arr[4]} \n E = {opt_arr[5]}")
-print(
-    f" I_EM = {opt_res[0]}\n I_GD = {opt_res[1]}\n I_bit = {opt_res[2]}\n m_bit = {opt_res[3]}\n fI = {opt_res[4]}\n fm = {opt_res[5]}\n I_sp = {opt_res[6]}\n eta = {opt_res[7]}\n R_c = {opt_res[8]}\n R_p = {opt_res[9]}\n EpA = {opt_res[10]}")
+    f"E0 = {opt_arr[5]} (discharge energy [J])\n"
+    f"h = {opt_arr[0]} (height [cm])\n"
+    f"w = {opt_arr[1]} (width [cm])\n"
+    f"c = {opt_arr[2]} (electrode thickness [cm])\n"
+    f"R = {opt_arr[3]} (total effective resistance [Ohm])\n"
+    f"L = {opt_arr[4]} (total effective inductance [nH])\n"
+    f"I_EM = {opt_res[0]} (electromagnetic impulse bit [microNs])\n"
+    f"I_GD = {opt_res[1]} (gas dynamic impulse bit [microNs])\n"
+    f"I_bit = {opt_res[2]} (total impulse bit [microNs])\n"
+    f"m_bit = {opt_res[3]} (total mass bit [microg])\n"
+    f"fI = {opt_res[4]} (electromagnetic impulse fraction [-])\n"
+    f"fm = {opt_res[5]} (electromagnetic mass fraction [-])\n"
+    f"I_sp = {opt_res[6]} (specific impulse [s])\n"
+    f"eta = {opt_res[7]} (efficiency [-])\nR_c = {opt_res[8]} (circuit resistance [Ohm])\n"
+    f"R_p = {opt_res[9]} (plasma resistance [Ohm])\n"
+    f"E0A = {opt_res[10]} (energy to propellant surface area ratio [J/cm^2]")
