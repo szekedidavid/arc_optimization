@@ -37,10 +37,10 @@ class ThrusterOptimizer:
         h, w, c, R, L, E = arr
         C1, C2, g, mu0, um, Rm = self.consts.values()
 
-        m_bit = C1 * (h / w) * (E / R) * 1000
+        m_bit = C1 * (h / w) * (E / R) * 1e3
         Lp = mu0 / np.pi * (3 / 2 + np.log((h / w) / (1 + (c / w))))
-        I_EM = E / R * (Lp / 2) * 1000
-        I_GD = (E / R * (C2 / np.sqrt(w)) * (h / w) * (E / L) ** (1 / 4)) * 1000
+        I_EM = E / R * (Lp / 2) * 1e3
+        I_GD = (E / R * (C2 / np.sqrt(w)) * (h / w) * (E / L) ** (1 / 4)) * 1e3
         I_bit = I_EM + I_GD
         I_sp = I_bit * 1e-9 / (m_bit * 1e-12 * g)
         fm = I_EM * 1e-6 / (um * m_bit * 1e-9)
@@ -142,9 +142,6 @@ for key in parameters:
 
 optimizer = ThrusterOptimizer(parameters, constants)
 optimizer.print_guess_results()
-
-print(parameters["h"][2] / parameters["w"][2] * parameters["E"][2] / parameters["R"][2])
-print(parameters["h"][2] / parameters["w"][2] * parameters["E"][2] / (parameters["L"][2] ** (1 / 4) * parameters["R"][2]))
 
 # optimizer.investigate_correlation("h")
 
