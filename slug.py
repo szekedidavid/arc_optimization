@@ -11,15 +11,15 @@ class ThrusterOptimizer:
 
     def get_results(self, arr: np.ndarray):
         h, w, c, R0, L0, V0, E0 = arr  # todo: what to do about resistance?
-        C, g, mu0, um, Rm = self.consts
+        C, g, mu0, um, Rm = self.consts.values()
 
         C0 = 2 * E0 / V0 ** 2
         Lp = mu0 / np.pi * (3 / 2 + np.log(h / (w + c)))  # todo: is this analytical?
-        m_b = C * (h / w) * (E0 / R0)  # todo: use regression instead?
+        m_bit = C * (h / w) * (E0 / R0)  # todo: use regression instead?
 
         alpha = R0 * np.sqrt(C0 / L0)
         beta = 2 * np.pi * Lp / mu0
-        delta = (V0 * C0) ** 2 / L0 * (mu0 / (2 * np.pi)) ** 2 * 1 / (2 * m_b)
+        delta = (V0 * C0) ** 2 / L0 * (mu0 / (2 * np.pi)) ** 2 * 1 / (2 * m_bit)
 
 
 parameters = {
@@ -40,3 +40,6 @@ constants = {
     "um": 20 * 1e3,
     "Rm": 2
 }
+
+optimizer = ThrusterOptimizer(parameters, constants)
+optimizer.get_results(np.array(list(optimizer.params[k][2] for k in optimizer.params)))
