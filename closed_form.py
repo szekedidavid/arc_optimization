@@ -1,6 +1,7 @@
 import numpy as np
 import scipy as sp
 import matplotlib.pyplot as plt
+import pandas as pd
 
 
 # import pandas as pd
@@ -20,11 +21,16 @@ def print_results(input, res):
         f"m_bit = {res[3]} (total mass bit [microg])\n"
         f"fI = {res[4]} (electromagnetic impulse fraction [-])\n"
         f"fm = {res[5]} (electromagnetic mass fraction [-])\n"
-        f"I_sp = {res[6]} (specific impulse [s])\n"
+        f"I_sp = {res[6]} (mass specific impulse [s])\n"
         f"eta = {res[7]} (efficiency [-])\n"
         f"R0 = {res[8]} (circuit resistance [mOhm])\n"
         f"Rp = {res[9]} (plasma resistance [mOhm])\n"
-        f"E0A = {res[10]} (energy to propellant surface area ratio [J/cm^2])"
+        f"E0A = {res[10]} (energy to propellant surface area ratio [J/cm^2])\n"
+        f"I_esp = {res[11]} (energy specific impulse [microNs/J])\n"
+        f"nu_max = {res[12]} (maximum frequency [Hz])\n"
+        f"P_max = {res[13]} (maximum power [W])\n"
+        f"N_shots = {res[14]} (number of shots [-])\n"
+        f"M_prop = {res[15]} (total propellant mass [g])"
     )
 
 
@@ -33,22 +39,33 @@ class ThrusterOptimizer:
         self.params = params
         self.consts = consts
 
+        self.I_sp_weight = 1
+        self.I_esp_weight = 1
+        self.I_sp_max = 0
+        self.I_esp_max = 0
+
         self.guess = np.array([self.params[k][2] for k in self.params])
         self.bounds = np.array([(self.params[k][0], self.params[k][1]) for k in self.params])
 
-    def get_results(self, arr: np.ndarray[8], opt: bool):
-        I_EM, I_GD, I_bit, m_bit, fI, fm, I_sp, eta, R0, Rp, EpA, I_esp, nu_max, P_max, N_shots, M_prop = self.get_results_open_form(
-            arr)
+    def update_params(self):
+        self.guess = np.array([self.params[k][2] for k in self.params])
+        self.bounds = np.array([(self.params[k][0], self.params[k][1]) for k in self.params])
 
-        if opt:
-            return 1 / I_esp
-        else:
-            return I_EM, I_GD, I_bit, m_bit, fI, fm, I_sp, eta, R0, Rp, EpA, I_esp, nu_max, P_max, N_shots, M_prop
+    def cost_function(self, arr: np.ndarray[8]):
+        I_EM, I_GD, I_bit, m_bit, fI, fm, I_sp, eta, R0, Rp, EpA, I_esp, nu_max, P_max, N_shots, M_prop\
+            = self.get_results(arr)
 
-    def get_results_open_form(self, arr: np.ndarray[8]):
+        I_sp_normalized = - I_sp / self.I_sp_max
+        I_esp_normalized = - I_esp / self.I_esp_max
+
+        # print(I_sp_normalized, I_esp_normalized)
+
+        return self.I_sp_weight * I_sp_normalized + self.I_esp_weight * I_esp_normalized
+
+    def get_results(self, arr: np.ndarray[8]):
         h, w, c, R, L, E = arr
         C1, _, C3, g, nu0, um, Rm, n, T_max, I_tot = self.consts.values()
-        V = h * 1000
+        V = 188.55 * h + 1103.9
         C = 2 * E / V ** 2
 
         omega = np.sqrt(1 / (L * 1e-9 * C) - (R * 1e-3) ** 2 / (4 * (L * 1e-9) ** 2))
@@ -107,7 +124,7 @@ class ThrusterOptimizer:
                 results['fm'][i], results['I_sp'][i], results['eta'][i], results['R0'], results['Rp'], \
                 results['EpA'][i], results['I_esp'][i], \
                 results['nu_max'][i], results['P_max'][i], results['N_shots'][i], results['M_prop'][
-                i] = self.get_results(arr, False)
+                i] = self.get_results(arr)
 
         # fig, axs = plt.subplots(2, 4, figsize=(16, 9))
         # fig.suptitle(f"Varying {var} [cm]")
@@ -169,21 +186,21 @@ class ThrusterOptimizer:
         It takes the lower and upper bounds, and the initial guess values, from the params dictionary.
         After finding the solution, it prints both the thruster parameters and the performance values.
         """
-        result = sp.optimize.minimize(self.get_results, self.guess, (True,), bounds=self.bounds, method="Nelder-Mead")
+        result = sp.optimize.minimize(self.cost_function, self.guess, bounds=self.bounds, method="Nelder-Mead")
         return result
 
     def print_optimized_results(self):
         """Function that prints the thruster parameters and performance values for the optimized configuration."""
 
         opt_arr = self.optimize_thruster().x
-        opt_res = self.get_results(opt_arr, False)
+        opt_res = self.get_results(opt_arr)
 
         print_results(opt_arr, opt_res)
 
     def print_guess_results(self):
         """Function that prints the thruster parameters and performance values for the initial guess configuration."""
 
-        guess_res = self.get_results(self.guess, False)
+        guess_res = self.get_results(self.guess)
 
         print_results(self.guess, guess_res)
 
@@ -191,12 +208,12 @@ class ThrusterOptimizer:
 # First and second list elements are the mininum and maxinum values for the optimization,
 # and the third ones are the initial guesses (or treated as fixed values, depending on the context).
 parameters = {
-    "h": [1, 4, 2],  # channel height [cm]
-    "w": [0.5, 3, 2],  # electrode width [cm]
+    "h": [1, 3.8, 2],  # channel height [cm]
+    "w": [1, 2.5, 2],  # electrode width [cm]
     "c": [0.5, 0.5, 0.5],  # electrode thickness [cm]
     "R": [22, 55, 35],  # effective resistance [mOhm]
     "L": [45, 170, 100],  # effetive inductance [nH]
-    "E": [5, 60, 10],  # stored energy [J]
+    "E": [0, 0, 0],  # stored energy [J]
 }
 
 constants = {
@@ -209,18 +226,53 @@ constants = {
     "Rm": 2,  # magnetic Reynolds number
     "n": 0.8,  # solid propellant exponent
 
-    "T_max": 2.007,
+    "T_max": 2,
     "I_tot": 35
 }
 
 # thruster_data = pd.read_excel("thruster_data.xlsx", index_col=0)
 # print(thruster_data)
-#
-# thruster_name = "NASA GRC 60J"
+
+# thruster_name = "XPPT-1"
 # for key in parameters:
 #     if not np.isnan(thruster_data.loc[thruster_name][key]):
 #         parameters[key][2] = thruster_data.loc[thruster_name][key]
 
+E_arr = np.linspace(10, 60, 30)
+print(E_arr)
 optimizer = ThrusterOptimizer(parameters, constants)
+res = []
+for E in E_arr:
+    print(f"For E = {E}:")
+    optimizer.params["E"] = [E, E, E]
+    optimizer.update_params()
+
+    optimizer.I_sp_max = 1
+    optimizer.I_sp_weight = 1
+    optimizer.I_esp_weight = 0
+    param_for_optim_I_sp = optimizer.optimize_thruster().x
+    res_for_optim_I_sp = optimizer.get_results(param_for_optim_I_sp)
+    print(f"Optimized I_sp: I_sp = {res_for_optim_I_sp[6]}, I_esp = {res_for_optim_I_sp[11]}")
+    optimizer.I_sp_max = res_for_optim_I_sp[6]
+
+    optimizer.I_esp_max = 1
+    optimizer.I_sp_weight = 0
+    optimizer.I_esp_weight = 1
+    param_for_optim_I_esp = optimizer.optimize_thruster().x
+    res_for_optim_I_esp = optimizer.get_results(param_for_optim_I_esp)
+    print(f"Optimized I_esp: I_sp = {res_for_optim_I_esp[6]}, I_esp = {res_for_optim_I_esp[11]}")
+    optimizer.I_esp_max = res_for_optim_I_esp[11]
+
+    optimizer.I_sp_weight = 1
+    optimizer.I_esp_weight = 100
+    # print(optimizer.I_sp_max, optimizer.I_esp_max)
+    param_for_optim = optimizer.optimize_thruster().x
+    res_for_optim = optimizer.get_results(param_for_optim)
+    print(f"Optimized I_sp and I_esp: I_sp = {res_for_optim[6]}, I_esp = {res_for_optim[11]}")
+    res.append(res_for_optim)
+
+plt.scatter(E_arr, [r[2] for r in res])
+plt.show()
+
 # optimizer.investigate_correlation("E")
-optimizer.print_optimized_results()
+# optimizer.print_guess_results()
