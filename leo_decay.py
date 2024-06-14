@@ -39,15 +39,15 @@ G0 = 9.80665
 # USER INPUTS
 A = 0.1*0.1                     # Spacecraft surface area [m^2]
 cd = 2                          # Spacecraft coefficient of drag [-]
-spacecraftmass = 5              # Spacraft mass [kg]
+spacecraftmass = 6              # Spacraft mass [kg]
 propmass = 0.10                 # Propellant mass [kg]
-orbitalt = 500e3                # Orbital altitude [m] (180km-500km)
+orbitalt = 400e3                # Orbital altitude [m] (180km-500km)
 lifetime = 3                    # Total lifetime [yrs]
 impulse_bit = 100e-6             # impulse per shot [uNs]
 
 # space weather
-f10 = 150                        # average solar flux parameter for 10+yrs
-f10max = 175                    # maximum expected solar flux parameter
+f10 = 75                        # average solar flux parameter for 10+yrs
+f10max = 75                    # maximum expected solar flux parameter
 ap = 0                          # geomagnetic index
 
 # margins
